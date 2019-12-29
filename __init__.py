@@ -1,8 +1,16 @@
+import sys
+
+sys.path.append('H:/Blender/IO_Enfusion_Blender')
+sys.path.append('__path__')
+
 import bpy
 import bpy_extras.io_utils
 from bpy.types import Operator, AddonPreferences
 from bpy.props import *
 from bpy_extras.io_utils import ExportHelper, ImportHelper
+
+import import_anm
+import anm
 
 bl_info = {
     "name": "Enfusion",
@@ -29,14 +37,13 @@ class ImportENFANM(bpy.types.Operator, ImportHelper):
     files = CollectionProperty(type=bpy.types.PropertyGroup)
 
     def execute(self, context):
-        from . import import_anm
-        result = import_anm.load(
+        result = import_anm.read(
             self, context, **self.as_keywords(ignore=("filter_glob", "files")))
         if result:
             self.report({'INFO'}, 'ANM has been loaded')
             return {'FINISHED'}
         else:
-            self.report({'ERROR'}, 'Failed to load ANM')
+            self.report({'ERROR'}, 'Failed to read ANM')
             return {'CANCELLED'}
 
     @classmethod
@@ -49,6 +56,8 @@ def menu_func_import_anm(self, context):
 
 __classes__ = (
     ImportENFANM,
+    #anm.ANMHEAD,
+    #anm.ANMBone,
 )
 
 def register():
@@ -65,3 +74,5 @@ def unregister():
 
 if __name__ == "__main__":
     register()
+
+    import_anm.read(None, None, "P:/DZ/anims/anm/player/attacks/2hd/p_2hd_light_erc_attack_L_02.anm")
