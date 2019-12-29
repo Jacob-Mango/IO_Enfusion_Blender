@@ -2,6 +2,34 @@ import time
 import struct
 import bpy
 
+class ANMKey(object):
+    X = 0
+    Y = 0
+    Z = 0
+    W = 0
+
+class ANMKeys(object):
+    FrameNum = {}
+    Keys = {}
+
+    def read(self, path, file, version, num, amount):
+        bytes = file.read(2 * num)
+        self.FrameNum = struct.unpack("=%dh" % (1 * num), bytes)
+
+        for x in range(num):
+            data = struct.unpack("=%dh" % (amount), file.read(4 * amount))
+            self.Keys[x] = ANMKey()
+            self.Keys[x].X = data[0]
+            if amount > 1:
+                self.Keys[x].Y = data[1]
+            if amount > 2:
+                self.Keys[x].Z = data[2]
+            if amount > 3:
+                self.Keys[x].W = data[3]
+
+    def write(self, path, file, version):
+        print("not implemented")
+
 class ANMBone(object):
     name = ""
     translation_bias = 0.0
@@ -14,6 +42,9 @@ class ANMBone(object):
     num_translations = 0
     num_rotations = 0
     num_scales = 0
+    translations = ANMKeys()
+    rotations = ANMKeys()
+    scales = ANMKeys()
     flag = 0
 
     def read(self, path, file, version):
@@ -80,6 +111,27 @@ class ANMHEAD(object):
             self.bones[idx] = ANMBone()
             self.bones[idx].read(path, file, version)
             idx = idx + 1
+
+    def write(self, path, file, version):
+        print("not implemented")
+
+class ANMDATA(object):
+    head = None
+
+    def __init__(self, _head=None):
+        self.head = _head
+
+    def read(self, path, file, version):
+        form = file.read(4).decode("utf-8")
+        if form != "DATA":
+            raise RuntimeError("Didn't find DATA at expected place")
+
+        bytes_remaining = struct.unpack(">i", file.read(4))[0]
+
+        for bone in self.head.bones:
+            bone.translations.read(path, file, version, bone.num_translations, 3)
+            bone.rotations.read(path, file, version, bone.num_rotations, 4)
+            bone.scales.read(path, file, version, bone.num_scales, 3)
 
     def write(self, path, file, version):
         print("not implemented")
