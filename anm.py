@@ -39,7 +39,7 @@ class ANMBone(object):
         if version >= 6:
             num_scales = struct.unpack("=H", file.read(2))[0]
 
-        flag = file.read(1)
+        flag = file.read(1)[0]
 
         if version == 5:
             file.read(1)
@@ -58,6 +58,7 @@ class ANMBone(object):
         print("num_translations: " + str(num_translations))
         print("num_rotations: " + str(num_rotations))
         print("num_scales: " + str(num_scales))
+        print("flag: " + str(flag))
         print("\n")
 
     def write(self, path, file, version):
