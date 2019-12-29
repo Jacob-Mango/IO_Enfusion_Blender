@@ -142,14 +142,6 @@ class ANM(object):
     head = None
 
     def read(self, path, file):
-        # Ascii		    form;				// "FORM"
-        # bigEndian	    remaining_bytes;	// useless. 8 less that actual file size
-        # Ascii		    anmiset;			// "ANIMSET5" or "ANIMSET6"
-        # bigEndian	    remaining_bytes; 	// useless 20 less that actual file size
-        # Ascii		    fpsstr;				// a constant "FPS\0" 
-        # bigEndian	    num6;				// a constant 0x0004
-        # uint32		fps;				// frames per second (normally 1e 00 00 00))
-
         form = file.read(4).decode("utf-8")
         if form != "FORM":
             raise RuntimeError("File type not FORM")
