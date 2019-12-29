@@ -25,4 +25,6 @@ def read(self, context, filepath=""):
         file = open(filepath, "rb")
     except IOError:
         print("Could not open file for reading:\n %s" % filepath)
-        return
+        return False
+
+    return True

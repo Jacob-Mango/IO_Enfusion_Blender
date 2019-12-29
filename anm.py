@@ -137,8 +137,8 @@ class ANMDATA(object):
         print("not implemented")
 
 class ANM(object):    
-    version = bpy.props.IntProperty(name="Version", default=6)
-    fps = bpy.props.IntProperty(name="FPS", default=60)
+    version = 0
+    fps = 0
     head = None
 
     def read(self, path, file):

@@ -32,13 +32,12 @@ class ImportENFANM(bpy.types.Operator, ImportHelper):
     bl_options = {'PRESET'}
 
     filename_ext = ".anm"
-    filter_glob = StringProperty(default="*.anm", options={'HIDDEN'})
+    filter_glob: StringProperty(default="*.anm", options={'HIDDEN'})
 
-    files = CollectionProperty(type=bpy.types.PropertyGroup)
+    files: CollectionProperty(type=bpy.types.PropertyGroup)
 
     def execute(self, context):
-        result = import_anm.read(
-            self, context, **self.as_keywords(ignore=("filter_glob", "files")))
+        result = import_anm.read(self, context, **self.as_keywords(ignore=("filter_glob", "files")))
         if result:
             self.report({'INFO'}, 'ANM has been loaded')
             return {'FINISHED'}
