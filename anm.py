@@ -12,20 +12,19 @@ class ANMKeys(object):
     FrameNum = {}
     Keys = {}
 
-    def read(self, path, file, version, num, amount):
-        bytes = file.read(2 * num)
-        self.FrameNum = struct.unpack("=%dh" % (1 * num), bytes)
+    def read(self, path, file, version, num, amount, bias, multipler):
+        self.FrameNum = struct.unpack("=%dh" % (1 * num), file.read(2 * num))
 
         for x in range(num):
-            data = struct.unpack("=%dh" % (amount), file.read(4 * amount))
+            data = struct.unpack("=%dh" % (amount), file.read(2 * amount))
             self.Keys[x] = ANMKey()
-            self.Keys[x].X = data[0]
+            self.Keys[x].X = (data[0] * multipler) + bias
             if amount > 1:
-                self.Keys[x].Y = data[1]
+                self.Keys[x].Y = (data[1] * multipler) + bias
             if amount > 2:
-                self.Keys[x].Z = data[2]
+                self.Keys[x].Z = (data[2] * multipler) + bias
             if amount > 3:
-                self.Keys[x].W = data[3]
+                self.Keys[x].W = (data[3] * multipler) + bias
 
     def write(self, path, file, version):
         print("not implemented")
@@ -49,54 +48,58 @@ class ANMBone(object):
 
     def read(self, path, file, version):
         if version == 5:
-            name = file.read(32).decode("utf-8")
+            self.name = file.read(32).decode("utf-8")
         
-        translation_bias = struct.unpack("=f", file.read(4))[0]
-        translation_multiplier = struct.unpack("=f", file.read(4))[0]
+        self.translation_bias = struct.unpack("=f", file.read(4))[0]
+        self.translation_multiplier = struct.unpack("=f", file.read(4))[0]
 
-        rotation_bias = struct.unpack("=f", file.read(4))[0]
-        rotation_multiplier = struct.unpack("=f", file.read(4))[0]
-
-        if version >= 6:
-            scale_bias = struct.unpack("=f", file.read(4))[0]
-            scale_multiplier = struct.unpack("=f", file.read(4))[0]
-
-        num_frames = struct.unpack("=H", file.read(2))[0]
-
-        num_translations = struct.unpack("=H", file.read(2))[0]
-
-        num_rotations = struct.unpack("=H", file.read(2))[0]
+        self.rotation_bias = struct.unpack("=f", file.read(4))[0]
+        self.rotation_multiplier = struct.unpack("=f", file.read(4))[0]
 
         if version >= 6:
-            num_scales = struct.unpack("=H", file.read(2))[0]
+            self.scale_bias = struct.unpack("=f", file.read(4))[0]
+            self.scale_multiplier = struct.unpack("=f", file.read(4))[0]
 
-        flag = file.read(1)[0]
+        self.num_frames = struct.unpack("=H", file.read(2))[0]
+
+        self.num_translations = struct.unpack("=H", file.read(2))[0]
+
+        self.num_rotations = struct.unpack("=H", file.read(2))[0]
+
+        if version >= 6:
+            self.num_scales = struct.unpack("=H", file.read(2))[0]
+
+        self.flag = file.read(1)[0]
 
         if version == 5:
             file.read(1)
         elif version >= 6:
             len = file.read(1)[0] # struct.unpack("=h", file.read(2))[0]
-            name = file.read(len).decode("utf-8")
+            self.name = file.read(len).decode("utf-8")
 
-        print("name: " + name)
-        print("translation_bias: " + str(translation_bias))
-        print("translation_multiplier: " + str(translation_multiplier))
-        print("rotation_bias: " + str(rotation_bias))
-        print("rotation_multiplier: " + str(rotation_multiplier))
-        print("scale_bias: " + str(scale_bias))
-        print("scale_multiplier: " + str(scale_multiplier))
-        print("num_frames: " + str(num_frames))
-        print("num_translations: " + str(num_translations))
-        print("num_rotations: " + str(num_rotations))
-        print("num_scales: " + str(num_scales))
-        print("flag: " + str(flag))
+        print("name: " + self.name)
+        # print("translation_bias: " + str(self.translation_bias))
+        # print("translation_multiplier: " + str(self.translation_multiplier))
+        # print("rotation_bias: " + str(self.rotation_bias))
+        # print("rotation_multiplier: " + str(self.rotation_multiplier))
+        # print("scale_bias: " + str(self.scale_bias))
+        # print("scale_multiplier: " + str(self.scale_multiplier))
+        print("num_frames: " + str(self.num_frames))
+        print("num_translations: " + str(self.num_translations))
+        print("num_rotations: " + str(self.num_rotations))
+        print("num_scales: " + str(self.num_scales))
+        print("flag: " + str(self.flag))
         print("\n")
 
     def write(self, path, file, version):
         print("not implemented")
 
 class ANMHEAD(object):
+    anm = None
     bones = {}
+
+    def __init__(self, _anm=None):
+        self.anm = _anm
 
     def read(self, path, file, version):
         form = file.read(4).decode("utf-8")
@@ -116,10 +119,10 @@ class ANMHEAD(object):
         print("not implemented")
 
 class ANMDATA(object):
-    head = None
+    anm = None
 
-    def __init__(self, _head=None):
-        self.head = _head
+    def __init__(self, _anm=None):
+        self.anm = _anm
 
     def read(self, path, file, version):
         form = file.read(4).decode("utf-8")
@@ -128,10 +131,11 @@ class ANMDATA(object):
 
         bytes_remaining = struct.unpack(">i", file.read(4))[0]
 
-        for bone in self.head.bones:
-            bone.translations.read(path, file, version, bone.num_translations, 3)
-            bone.rotations.read(path, file, version, bone.num_rotations, 4)
-            bone.scales.read(path, file, version, bone.num_scales, 3)
+        for idx in self.anm.bones():
+            bone = self.anm.bones()[idx]
+            bone.translations.read(path, file, version, bone.num_translations, 3, bone.translation_bias, bone.translation_multiplier)
+            bone.rotations.read(path, file, version, bone.num_rotations, 4, bone.rotation_bias, bone.rotation_multiplier)
+            bone.scales.read(path, file, version, bone.num_scales, 3, bone.scale_bias, bone.scale_multiplier)
 
     def write(self, path, file, version):
         print("not implemented")
@@ -140,6 +144,10 @@ class ANM(object):
     version = 0
     fps = 0
     head = None
+    data = None
+
+    def bones(self):
+        return self.head.bones
 
     def read(self, path, file):
         form = file.read(4).decode("utf-8")
@@ -170,9 +178,11 @@ class ANM(object):
 
         self.fps = struct.unpack("=L", file.read(4))[0]
 
-        self.head = ANMHEAD()
+        self.head = ANMHEAD(self)
         self.head.read(path, file, self.version)
 
+        self.data = ANMDATA(self)
+        self.data.read(path, file, self.version)
 
     def write(self, path, file):
         print("not implemented")
