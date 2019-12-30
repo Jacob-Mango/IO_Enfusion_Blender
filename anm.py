@@ -2,6 +2,9 @@ import time
 import struct
 import bpy
 
+import mathutils
+import math
+
 class ANMKey(object):
     X = 0
     Y = 0
@@ -31,6 +34,7 @@ class ANMKeys(object):
                 self.Keys[frame_num].Z = float(struct.unpack("=h", file.read(2))[0])
                 self.Keys[frame_num].W = float(struct.unpack("=h", file.read(2))[0])
 
+# ignore this being multiple lines, idk python and i thought math was fucked in the language
             self.Keys[frame_num].X *= multipler
             self.Keys[frame_num].Y *= multipler
             self.Keys[frame_num].Z *= multipler
@@ -40,17 +44,6 @@ class ANMKeys(object):
             self.Keys[frame_num].Y += bias
             self.Keys[frame_num].Z += bias
             self.Keys[frame_num].W += bias
-
-        print("num: ", num)
-        print("FrameNum Length: ", len(FrameNum))
-        print("Keys Length: ", len(self.Keys))
-        print("")
-
-        #for x in self.FrameNum:
-        #    print(x, ": ", self.FrameNum[x])
-
-        #for x in self.Keys:
-        #    print(x, ": [X:", self.Keys[x].X, "Y: ", self.Keys[x].Y, "Z: ", self.Keys[x].Z, "W: ", self.Keys[x].W, "]")
 
     def write(self, path, file, version):
         print("not implemented")
@@ -71,6 +64,7 @@ class ANMBone(object):
     rotations = ANMKeys()
     scales = ANMKeys()
     flag = 0
+    matrices = {}
 
     def read(self, path, file, version):
         if version == 5:
@@ -162,6 +156,23 @@ class ANMDATA(object):
             bone.translations.read(path, file, version, bone.num_translations, 3, bone.translation_bias, bone.translation_multiplier)
             bone.rotations.read(path, file, version, bone.num_rotations, 4, bone.rotation_bias, bone.rotation_multiplier)
             bone.scales.read(path, file, version, bone.num_scales, 3, bone.scale_bias, bone.scale_multiplier)
+
+            for trans_frame_num in bone.translations.Keys:
+                _translation = bone.translations.Keys[trans_frame_num]
+                translation = mathutils.Vector((_translation.X, _translation.Y, _translation.Z))
+
+                bone.matrices[trans_frame_num] = mathutils.Matrix.Translation(translation).to_4x4()
+
+            for rot_frame_num in bone.rotations.Keys:
+                _rotation = bone.translations.Keys[trans_frame_num]
+                rotation = mathutils.Quaternion((_rotation.W, _rotation.X, _rotation.Y, _rotation.Z))
+                mat_rot = rotation.to_matrix().to_4x4()
+                
+                if rot_frame_num in bone.matrices.keys():
+                    bone.matrices[rot_frame_num] = bone.matrices[rot_frame_num] @ mat_rot
+                else: 
+                    bone.matrices[rot_frame_num] = mat_rot
+                
 
     def write(self, path, file, version):
         print("not implemented")
