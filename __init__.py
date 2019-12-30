@@ -74,4 +74,4 @@ def unregister():
 if __name__ == "__main__":
     register()
 
-    import_anm.read(None, None, "P:/DZ/anims/anm/player/attacks/2hd/p_2hd_light_erc_attack_L_02.anm")
+    import_anm.read(None, None, "P:/DZ/anims/anm/player/funny/adam.anm")

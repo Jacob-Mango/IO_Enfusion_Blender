@@ -9,22 +9,48 @@ class ANMKey(object):
     W = 0
 
 class ANMKeys(object):
-    FrameNum = {}
     Keys = {}
 
     def read(self, path, file, version, num, amount, bias, multipler):
-        self.FrameNum = struct.unpack("=%dh" % (1 * num), file.read(2 * num))
-
+        FrameNum = {}
         for x in range(num):
-            data = struct.unpack("=%dh" % (amount), file.read(2 * amount))
-            self.Keys[x] = ANMKey()
-            self.Keys[x].X = (data[0] * multipler) + bias
-            if amount > 1:
-                self.Keys[x].Y = (data[1] * multipler) + bias
-            if amount > 2:
-                self.Keys[x].Z = (data[2] * multipler) + bias
-            if amount > 3:
-                self.Keys[x].W = (data[3] * multipler) + bias
+            FrameNum[x] = struct.unpack("=h", file.read(2))[0]
+
+        self.Keys = {}
+        for i in range(num):
+            frame_num = FrameNum[i]
+            self.Keys[frame_num] = ANMKey()
+            if amount == 3:
+                self.Keys[frame_num].X = float(struct.unpack("=h", file.read(2))[0])
+                self.Keys[frame_num].Y = float(struct.unpack("=h", file.read(2))[0])
+                self.Keys[frame_num].Z = float(struct.unpack("=h", file.read(2))[0])
+                self.Keys[frame_num].W = float(0)
+            if amount == 4:
+                self.Keys[frame_num].X = float(struct.unpack("=h", file.read(2))[0])
+                self.Keys[frame_num].Y = float(struct.unpack("=h", file.read(2))[0])
+                self.Keys[frame_num].Z = float(struct.unpack("=h", file.read(2))[0])
+                self.Keys[frame_num].W = float(struct.unpack("=h", file.read(2))[0])
+
+            self.Keys[frame_num].X *= multipler
+            self.Keys[frame_num].Y *= multipler
+            self.Keys[frame_num].Z *= multipler
+            self.Keys[frame_num].W *= multipler
+
+            self.Keys[frame_num].X += bias
+            self.Keys[frame_num].Y += bias
+            self.Keys[frame_num].Z += bias
+            self.Keys[frame_num].W += bias
+
+        print("num: ", num)
+        print("FrameNum Length: ", len(FrameNum))
+        print("Keys Length: ", len(self.Keys))
+        print("")
+
+        #for x in self.FrameNum:
+        #    print(x, ": ", self.FrameNum[x])
+
+        #for x in self.Keys:
+        #    print(x, ": [X:", self.Keys[x].X, "Y: ", self.Keys[x].Y, "Z: ", self.Keys[x].Z, "W: ", self.Keys[x].W, "]")
 
     def write(self, path, file, version):
         print("not implemented")
@@ -60,21 +86,21 @@ class ANMBone(object):
             self.scale_bias = struct.unpack("=f", file.read(4))[0]
             self.scale_multiplier = struct.unpack("=f", file.read(4))[0]
 
-        self.num_frames = struct.unpack("=H", file.read(2))[0]
+        self.num_frames = struct.unpack("=h", file.read(2))[0]
 
-        self.num_translations = struct.unpack("=H", file.read(2))[0]
+        self.num_translations = struct.unpack("=h", file.read(2))[0]
 
-        self.num_rotations = struct.unpack("=H", file.read(2))[0]
+        self.num_rotations = struct.unpack("=h", file.read(2))[0]
 
         if version >= 6:
-            self.num_scales = struct.unpack("=H", file.read(2))[0]
+            self.num_scales = struct.unpack("=h", file.read(2))[0]
 
         self.flag = file.read(1)[0]
 
         if version == 5:
             file.read(1)
         elif version >= 6:
-            len = file.read(1)[0] # struct.unpack("=h", file.read(2))[0]
+            len = file.read(1)[0]
             self.name = file.read(len).decode("utf-8")
 
         print("name: " + self.name)
